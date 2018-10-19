@@ -15,7 +15,7 @@
 
         if ($polaczenie -> connect_error!=0) 
         {
-            echo "Error: ".$polaczenie->connect_errno."opis: ".$polaczenie->connection_error;
+            echo "Error: ".$polaczenie->connect_errno;
         }
         else
         {
@@ -23,10 +23,29 @@
             $login = $_POST['login'];
             $haslo = $_POST['haslo'];
 
-            echo $login;
-            echo $haslo;
+            $sql = "SELECT * FROM uzytkownicy WHERE user = '$login' AND pass='$haslo'";
 
-            $polaczenie->close();
+            if ($rezultat = @$polaczenie->query($sql)) 
+            {
+                $ilu_userow = $rezultat->num_rows;
+                if ($ilu_userow>0) 
+                {
+                    $wiersz = $rezultat->fetch_assoc();
+                    $user = $wiersz['user'];
+                    // przekierowanie do panelu gry
+                    header('Location: gra.php');
+                    $rezultat->free();
+                }
+                else 
+                {
+                    
+                }
+            }
+
+            //echo $login;
+            //echo $haslo;
+
+            //$polaczenie->close();
 
         }
 
