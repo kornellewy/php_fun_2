@@ -16,6 +16,8 @@
 </head>
 
 <body>
+    <a href="rejestracja.php">Rejestracja</a>
+    <br><br/>
     <form action="zaloguj.php" method="post">
         login: <br><input type="text" name = "login"><br/>
         haslo: <br><input type="password" name = "haslo"><br/>
