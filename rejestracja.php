@@ -45,10 +45,78 @@
                 $_SESSION['e_haslo']="podane hasła nie sa identyczne";
             }
 
-            if ($wszystko_ok==true) 
+            $haslo_hash = password_hash($haslo, PASSWORD_DEFAULT);
+            // spr czy zanzaczono regulamin
+            if (!isset($_POST['regulamin'])) {
+                $wszystko_ok = false;
+                $_SESSION['e_regulamin']="prosze potwierdzic regulamin";
+            }
+
+            //spr bot
+            $sekret = "6LcLJXYUAAAAANpLVE95TRjifIkK6UuTCtTkHoYI";
+            // get json form gooogle
+            $sprawdzenie = file_get_contents('https://www.google.com/recaptcha/api/siteverify?secret='.$sekret.'&response='.$_POST['g-recaptcha-response']);
+            // decode form json
+            $odpowiedz = json_decode($sprawdzenie);
+
+            if ($odpowiedz->success==false) 
             {
-                echo "udana walidacja";
-                exit();
+                $wszystko_ok = false;
+                $_SESSION['e_bot']="huja jestes botem";
+            }
+
+            require_once "connect.php";
+            mysqli_report(MYSQLI_REPORT_STRICT);
+
+            try
+            {
+                $polaczenie = new mysqli($host, $db_user, $db_password, $db_name);
+                if ($polaczenie -> connect_error!=0) 
+                {
+                    throw new Exception(mysqli_connect_errno());
+                }
+                else
+                {
+                    //spr czy email juz byl uzyty
+                    $rezultat = $polaczenie->query("SELECT id FROM uzytkownicy WHERE email='$email'");
+
+                    if (!$rezultat) throw new Exception($polaczenie->error);
+
+                    $ile_takich_maili = $rezultat->num_rows;
+                    if ($ile_takich_maili>0) {
+                        $wszystko_ok = false;
+                        $_SESSION['e_email']="email juz uzyty";
+                    }
+
+                    //spr czy nick juz byl uzyty
+                    $rezultat = $polaczenie->query("SELECT id FROM uzytkownicy WHERE user='$nick'");
+
+                    if (!$rezultat) throw new Exception($polaczenie->error);
+
+                    $ile_takich_maili = $rezultat->num_rows;
+                    if ($ile_takich_maili>0) {
+                        $wszystko_ok = false;
+                        $_SESSION['e_nick']="nick juz uzyty";
+                    }
+
+                    if ($wszystko_ok==true) 
+                    {
+                        if ($polaczenie->query("INSERT INTO uzytkownicy VALUES (NULL, '$nick', '$haslo_hash', '$email',100,100,100,14)")) {
+                            $_SESSION['udanarejestracja'] = true;
+                            header('Location: witamy.php');
+                        }
+                        else
+                        {
+                            throw new Exception($polaczenie->error);
+                        }
+                    }
+                    $polaczenie->close();
+                }
+            }
+            catch(Exception $e)
+            {
+                echo "bład serwera ";
+                //echo $e;
             }
         }
 ?>
@@ -92,7 +160,21 @@
         <label>
             <input type="checkbox" name="regulamin"> Akceptuje regulamin
         </label>
+        <?php
+            if (isset($_SESSION['e_regulamin']))
+            {
+                echo '<div class="error">'.$_SESSION['e_regulamin'].'</div>';
+                unset($_SESSION['e_regulamin']);
+            }
+        ?>
         <div class="g-recaptcha" data-sitekey="6LcLJXYUAAAAAAklhMBzS7w9nnUg2ZE_vKAQTfkT"></div>
+        <?php
+            if (isset($_SESSION['e_bot']))
+            {
+                echo '<div class="error">'.$_SESSION['e_bot'].'</div>';
+                unset($_SESSION['e_bot']);
+            }
+        ?>
         <br><input type="submit" value="Zarejestruj się"> <br/>
     </form>
 
